@@ -1,21 +1,32 @@
-// 1. Impor "alat" penerjemah PostgreSQL (pg)
 const { Pool } = require('pg');
-
-// 2. Impor "brankas" kita
 require('dotenv').config();
 
-// 3. Buat "Kolam Koneksi" (Connection Pool)
-// Ini jauh lebih efisien daripada membuat koneksi baru setiap kali ada query.
-// Dia mengambil semua data dari file .env Anda.
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
+let config;
 
-// 4. Kita ekspor fungsi "query" agar bisa kita gunakan di file lain
+// Cek apakah kita sedang 'production' (di Railway)
+if (process.env.NODE_ENV === 'production') {
+  // Jika 'production', gunakan DATABASE_URL dari Railway/Neon
+  config = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false // Diperlukan oleh Neon
+    }
+  };
+} else {
+  // Jika 'development' (di laptop), gunakan 5 variabel .env lama
+  config = {
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_DATABASE,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+  };
+}
+
+// Buat "Kolam Koneksi" (Pool) menggunakan konfigurasi yang tepat
+const pool = new Pool(config);
+
+// Ekspor 'query'
 module.exports = {
   query: (text, params) => pool.query(text, params),
 };
